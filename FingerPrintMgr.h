@@ -22,8 +22,8 @@ private:
     explicit FingerPrintMgr(QObject *parent = nullptr);
 
     static FingerPrintMgr* m_instance;
-    QScopedPointer <FingerPrintCommunicationProtocol> m_fingerprint;
-//    QScopedPointer <FingerprintDevice> m_fingerprintDevice;
+//    QScopedPointer <FingerPrintCommunicationProtocol> m_fingerprint;
+    FingerPrintCommunicationProtocol* m_fingerprint;
 
 signals:
     void commandSuccess();

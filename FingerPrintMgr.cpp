@@ -21,7 +21,9 @@ void FingerPrintMgr::inicialize()
 {
     // TODO - Abstract factory - Cargar tipo de device segun configuracion
 
-    m_fingerprint.reset(new FP_GrowRX305(this));
+//    m_fingerprint.reset(new FP_GrowRX305());
+    m_fingerprint = new FP_GrowRX305();
+    QObject::connect(this->m_fingerprint, &FingerPrintCommunicationProtocol::commandSuccess, this, &FingerPrintMgr::commandSuccess);
 }
 
 bool FingerPrintMgr::openFingerPrintPort()

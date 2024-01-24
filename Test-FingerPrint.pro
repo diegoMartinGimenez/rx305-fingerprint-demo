@@ -15,10 +15,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         FP_GrowRX305.cpp \
+        FP_GrowRX305_StateMachine.cpp \
         FP_SerialComunication.cpp \
         FP_Worker.cpp \
         FingerPrintMgr.cpp \
-        FingerprintDevice.cpp \
         main.cpp
 
 RESOURCES += qml.qrc
@@ -36,8 +36,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     FP_GrowRX305.h \
+    FP_GrowRX305_StateMachine.h \
     FP_SerialComunication.h \
     FP_Worker.h \
     FingerPrintCommunicationProtocol.h \
-    FingerPrintMgr.h \
-    FingerprintDevice.h
+    FingerPrintMgr.h

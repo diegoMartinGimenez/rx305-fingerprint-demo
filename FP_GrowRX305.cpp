@@ -1,9 +1,23 @@
 #include "FP_GrowRX305.h"
 
-FP_GrowRX305::FP_GrowRX305(QObject *parent) : QObject(parent)
+FP_GrowRX305::FP_GrowRX305()
 {
-    m_port = new FP_SerialComunication();
+    m_port = new FP_SerialComunication(this);
+    m_stateMachine = new FP_GrowRX305_StateMachine(this);
+
+//    QObject::connect(m_thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
+//    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
+//    QObject::connect(m_worker, &FP_Worker::done, m_thread, &QThread::quit);
+//    QObject::connect(m_thread, &QThread::finished, m_thread, &QThread::deleteLater);
+
+//    m_thread->start();
+
     QObject::connect(this->m_port, &FP_SerialComunication::response, this, &FP_GrowRX305::processResponse);
+    QObject::connect(this, &FP_GrowRX305::commandSuccess, this, &FingerPrintCommunicationProtocol::commandSuccess);
+    QObject::connect(this, &FP_GrowRX305::enrolling, this->m_stateMachine, &FP_GrowRX305_StateMachine::signalOne);
+    QObject::connect(this, &FP_GrowRX305::commandSuccess, this->m_stateMachine, &FP_GrowRX305_StateMachine::success);
+    QObject::connect(this, &FP_GrowRX305::commandError, this->m_stateMachine, &FP_GrowRX305_StateMachine::error);
+    QObject::connect(this->m_stateMachine, &FP_GrowRX305_StateMachine::sendCommand, this, &FP_GrowRX305::sendCommandToWorker);
 }
 
 void FP_GrowRX305::cancel()
@@ -18,19 +32,26 @@ bool FP_GrowRX305::open()
 
 bool FP_GrowRX305::enroll(int id)
 {
+    emit enrolling();
     Q_UNUSED(id)
-    auto *thread = new QThread();
-    thread->setObjectName("Secondary Thread");
-    m_port->commandToSend("EF01ffffffff010003010005");
-    m_worker = new FP_Worker();
-    m_worker->moveToThread(thread);
+    QThread::currentThread()->setObjectName("Main Thread");
 
-    QObject::connect(thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
-    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
-    QObject::connect(m_worker, &FP_Worker::done, thread, &QThread::quit);
-    QObject::connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
-    thread->start();
+
+//    m_port->commandToSend(m_stateMachine->command());
+
+
+//    auto *thread = new QThread();
+//    thread->setObjectName("Secondary Thread");
+//    m_worker = new FP_Worker();
+//    m_worker->moveToThread(thread);
+
+//    QObject::connect(thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
+//    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
+//    QObject::connect(m_worker, &FP_Worker::done, thread, &QThread::quit);
+//    QObject::connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+//    thread->start();
 
     return true;
 }
@@ -81,6 +102,26 @@ QString FP_GrowRX305::cCodeToString(FP_GrowRX305::cCodes code)
     };
 
     return descriptions.value(code, "Unknown error");
+
+}
+
+void FP_GrowRX305::sendCommandToWorker()
+{
+    qDebug() << this << Q_FUNC_INFO << QThread::currentThread();
+
+    m_port->commandToSend(m_stateMachine->command());
+
+    m_thread = new QThread();
+    m_thread->setObjectName("Secondary Thread");
+    m_worker = new FP_Worker();
+    m_worker->moveToThread(m_thread);
+
+    QObject::connect(m_thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
+    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
+    QObject::connect(m_worker, &FP_Worker::done, m_thread, &QThread::quit);
+    QObject::connect(m_thread, &QThread::finished, m_thread, &QThread::deleteLater);
+
+    m_thread->start();
 
 }
 

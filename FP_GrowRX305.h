@@ -11,42 +11,8 @@
 #include "FingerPrintCommunicationProtocol.h"
 #include "FP_Worker.h"
 #include "FP_SerialComunication.h"
-//#include "FingerprintDevice.h"
+#include "FP_GrowRX305_StateMachine.h"
 
-/*
-#define FP_RESP_OK                      0x00   //command executed successfully
-#define FP_RESP_RECIEVEERR              0x01U   //packet receive error
-#define FP_RESP_NOFINGER                0x02U   //no finger detected
-#define FP_RESP_ENROLLFAIL              0x03U   //failed to enroll the finger
-#define FP_RESP_OVERDISORDERFAIL        0x04U   //failed to generate character file due to over-disorderly fingerprint image
-#define FP_RESP_OVERWETFAIL             0x05U   //failed to generate character file due to over-wet fingerprint image
-#define FP_RESP_OVERDISORDERFAIL2       0x06U   //failed to generate character file due to over-disorderly fingerprint image
-#define FP_RESP_FEATUREFAIL             0x07U   //failed to generate character file due to over-wet fingerprint image
-#define FP_RESP_DONOTMATCH              0x08U   //fingers do not match
-#define FP_RESP_NOTFOUND                0x09U   //no valid match found
-#define FP_RESP_ENROLLMISMATCH          0x0AU   //failed to combine character files (two character files (images) are used to create a template)
-#define FP_RESP_BADLOCATION             0x0BU   //addressing PageID is beyond the finger library
-#define FP_RESP_INVALIDTEMPLATE         0x0CU   //error when reading template from library or the template is invalid
-#define FP_RESP_TEMPLATEUPLOADFAIL      0x0DU   //error when uploading template
-#define FP_RESP_PACKETACCEPTFAIL        0x0EU   //module can not accept more packets
-#define FP_RESP_IMAGEUPLOADFAIL         0x0FU   //error when uploading image
-#define FP_RESP_TEMPLATEDELETEFAIL      0x10U   //error when deleting template
-#define FP_RESP_DBCLEARFAIL             0x11U   //failed to clear fingerprint library
-#define FP_RESP_WRONGPASSOWRD           0x13U   //wrong password
-#define FP_RESP_IMAGEGENERATEFAIL       0x15U   //fail to generate the image due to lackness of valid primary image
-#define FP_RESP_FLASHWRITEERR           0x18U   //error when writing flash
-#define FP_RESP_NODEFINITIONERR         0x19U   //no definition error
-#define FP_RESP_INVALIDREG              0x1AU   //invalid register number
-#define FP_RESP_INCORRECTCONFIG         0x1BU   //incorrect configuration of register
-#define FP_RESP_WRONGNOTEPADPAGE        0x1CU   //wrong notepad page number
-#define FP_RESP_COMPORTERR              0x1DU   //failed to operate the communication port
-#define FP_RESP_INVALIDREG              0x1AU   //invalid register number
-#define FP_RESP_SECONDSCANNOFINGER      0x41U   //secondary fingerprint scan failed due to no finger
-#define FP_RESP_SECONDENROLLFAIL        0x42U   //failed to enroll second fingerprint
-#define FP_RESP_SECONDFEATUREFAIL       0x43U   //failed to generate character file due to lack of enough features
-#define FP_RESP_SECONDOVERDISORDERFAIL  0x44U   //failed to generate character file due to over-disorderliness
-#define FP_RESP_DUPLICATEFINGERPRINT    0x45U   //duplicate fingerprint
-*/
 //-------------------------------------------------------------------------//
 //Received packet verification status codes from host device
 
@@ -102,11 +68,11 @@
 #define FP_DEFAULT_PASSWORD          0xFFFFFFFF
 #define FP_DEFAULT_ADDRESS           0xFFFFFFFF
 
-class FP_GrowRX305 : public QObject, public FingerPrintCommunicationProtocol
+class FP_GrowRX305 : public FingerPrintCommunicationProtocol
 {
     Q_OBJECT
 public:
-    explicit FP_GrowRX305(QObject *parent = nullptr);
+    explicit FP_GrowRX305();
 
     // FingerPrintCommunicationProtocol interface
     void cancel() override;
@@ -147,14 +113,21 @@ public:
 
     QString cCodeToString(cCodes code);
 
+public slots:
+    void sendCommandToWorker();
+
 private:
     FP_Worker *m_worker;
     FP_SerialComunication *m_port;
+    FP_GrowRX305_StateMachine *m_stateMachine;
+    QThread *m_thread;
+
 
 
 signals:
     void commandSuccess();
     void commandError(QString error);
+    void enrolling();
 
 
 };

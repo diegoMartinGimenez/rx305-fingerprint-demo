@@ -16,6 +16,8 @@ public:
     void sendCommand();
     QByteArray getResponse();
 
+    QString getCommandToSend() const;
+
 signals:
     void response(QString response);
 

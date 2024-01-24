@@ -2,7 +2,11 @@
 
 void FP_Worker::doWork(FP_SerialComunication *fp)
 {
-    fp->loop(&m_cancel);
-    qDebug() << "Worker done..";
+    qDebug() << "command: " << fp->getCommandToSend();
+//    fp->loop(&m_cancel);
+//    qDebug() << "Worker done..";
+//    emit done();
+    fp->sendCommand();
     emit done();
+
 }

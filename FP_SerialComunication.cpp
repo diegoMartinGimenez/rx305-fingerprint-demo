@@ -11,6 +11,7 @@ FP_SerialComunication::FP_SerialComunication(QObject *parent) : QObject(parent)
     m_serialport.setFlowControl(QSerialPort::NoFlowControl);
     m_portName = "/dev/ttyUSB0";
 
+
 }
 
 bool FP_SerialComunication::open()
@@ -50,6 +51,7 @@ void FP_SerialComunication::commandToSend(QString command)
 
 void FP_SerialComunication::sendCommand()
 {
+    qDebug() << this << Q_FUNC_INFO << QThread::currentThread();
     qDebug() << "Command: " << m_commandToSend;
 
     QSerialPort m_serial;
@@ -60,11 +62,14 @@ void FP_SerialComunication::sendCommand()
     m_serial.setStopBits(QSerialPort::OneStop);
     m_serial.setFlowControl(QSerialPort::NoFlowControl);
 
-    if (m_serial.open(QIODevice::ReadWrite))
-        qDebug() << "open port success";
-    else {
-        qDebug() << "error al abir com";
-        return;
+    if (!m_serial.isOpen()){
+
+        if (m_serial.open(QIODevice::ReadWrite))
+            qDebug() << "open port success";
+        else {
+            qDebug() << "error al abir com";
+            return;
+        }
     }
 
     QByteArray requestData;
@@ -78,7 +83,7 @@ void FP_SerialComunication::sendCommand()
             while (m_serial.waitForReadyRead(10)){
                 m_response += m_serial.readAll();
             }
-            qDebug() << "Response: " << m_response.toHex() << this << Q_FUNC_INFO << QThread::currentThread();
+//            qDebug() << "Response: " << m_response.toHex() << this << Q_FUNC_INFO << QThread::currentThread();
             emit this->response(m_response.toHex());
          } else {
 //            emit timeout(tr("Wait read response timeout %1").arg(QTime::currentTime().toString()));
@@ -89,12 +94,22 @@ void FP_SerialComunication::sendCommand()
         qDebug() << "Timeout";
 
     }
+    m_serial.close();
+    QThread::msleep(500);
 
 
 }
 
+
+
+
 QByteArray FP_SerialComunication::getResponse()
 {
     return m_response;
+}
+
+QString FP_SerialComunication::getCommandToSend() const
+{
+    return m_commandToSend;
 }
 

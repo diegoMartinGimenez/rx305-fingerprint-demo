@@ -9,6 +9,9 @@ Window {
     width: 500
     height: 250
     title: qsTr("Hello World")
+
+    property int counter: 1
+
     Rectangle {
         id: rect
         width: 200
@@ -28,7 +31,18 @@ Window {
         onClicked: fpMgr.loop()
         anchors.top: rect.bottom
         anchors.left: rect.left
+
     }
+
+//    Connections {
+//        target: fpMgr
+//        onCommandSuccess: {
+//            info.text = "OK" + counter
+//            counter += 1
+//        }
+
+
+//    }
 
     Button {
         text: "Cancel"
@@ -53,24 +67,6 @@ Window {
         anchors.right: parent.right
     }
 
-    DSM.StateMachine {
-        id: stateMachine
-        initialState: idle
-        running: true
-
-        DSM.State {
-            id: idle
-            DSM.SignalTransition {
-                signal: btnEnroll.clicked
-                targetState: enrollingState
-            }
-        }
-        DSM.State {
-            id: enrollingState
-            onEntered: info.text = "Enrolling"
-        }
-    }
-
 //    DSM.StateMachine {
 //        id: stateMachine
 //        initialState: idle
@@ -79,100 +75,28 @@ Window {
 //        DSM.State {
 //            id: idle
 //            DSM.SignalTransition {
-//                signal: updateButton.clicked
-//                targetState: validatingUrlLang
+//                signal: btnEnroll.clicked
+//                targetState: enrollingState
 //            }
 //        }
 //        DSM.State {
-//            id: validatingUrlLang
-//            DSM.SignalTransition {
-//                signal: _http.errorChanged
-//                targetState: idle
-//                onTriggered: showError(_http.error)
+//            id: enrollingState
+//            initialState: enrolling_State1
+//            onEntered: {
+//                info.text = "Enrolling"
 //            }
-//            DSM.SignalTransition {
-//                signal: _http.success
-//                targetState: updatingLang
-//                onTriggered: {
-//                    //httpWindow.reqFinished.connect(LangModel.update)
+//            DSM.State {
+//                id: enrolling_State1
+//                onEntered: fpMgr.loop()
+//                DSM.SignalTransition {
+//                    signal: fpMgr.commandSuccess
+//                    targetState: enrolling_State2
 //                }
 //            }
-//            onEntered: {
-//            }
-//        }
-//        DSM.State {
-//            id: updatingLang
-//            DSM.SignalTransition {
-//                signal: _http.errorChanged
-//                targetState: idle
-//                onTriggered: showError(_http.error)
-//            }
-//            DSM.SignalTransition {
-//                signal: _http.finished
-//                targetState: delay
-//                onTriggered: LangModel.update(code, content)
-//            }
-//        }
-//        DSM.State {
-//            id: delay
-//            DSM.TimeoutTransition {
-//                timeout: 100
-//                targetState: validatingUrlContrib
-//            }
-//        }
-//        DSM.State {
-//            id: validatingUrlContrib
-//            DSM.SignalTransition {
-//                signal: _http.errorChanged
-//                targetState: idle
-//                onTriggered: showError(_http.error)
-//            }
-//            DSM.SignalTransition {
-//                signal: _http.success
-//                targetState: updatingContrib
-//                onTriggered: console.log("to updatingContrib")
-//            }
-//            onEntered: {
-//                var url = "https://api.github.com/repos/" + orgTextField.text.trim() + "/" +
-//                          repoTextField.text.trim() + "/contributors"
-//                /*var url = "https://api.github.com/repos/vortexmakes/RKH" + "/stats/contributors"*/
-//                var header = "Accept: application/vnd.github.v3+json"
-//                _http.executeGet(url, header, tokenTextField.text)
-//            }
-//        }
-//        DSM.State {
-//            id: updatingContrib
-//            DSM.SignalTransition {
-//                signal: _http.errorChanged
-//                targetState: idle
-//                onTriggered: showError(_http.error)
-//            }
-//            DSM.SignalTransition {
-//                signal: _http.finished
-//                targetState: idle
-//                onTriggered: {
-//                    ContribModel.update(code, content)
-
-//                    var obj = JSON.parse(content)
-//                    var contrib = "Contributions: ["
-//                    var total = 0.0
-
-//                    // Calculates the total contributions
-//                    for (var n in obj) {
-//                        var cont = obj[n]
-//                        total += cont["contributions"]
-//                    }
-//                    // Makes a list storing information about each contributor
-//                    for (var k in obj) {
-//                        var author = obj[k]
-//                        var per = (author["contributions"] * 100)/total
-//                        contrib += " " + author["login"] + ": " + per.toFixed(2) + "% "
-//                                + "(" + author["contributions"] + ")"
-//                    }
-//                    contrib += " ]"
-//                    statusLabel.text = ""
-//                    statusLabel.text = contrib + "\n\n"
-//                    updateButton.focus = true
+//            DSM.State {
+//                id: enrolling_State2
+//                onEntered: {
+//                    info.text = "Step 2"
 //                }
 //            }
 //        }
