@@ -136,7 +136,6 @@ void FP_GrowRX305_StateMachine::storeCmd()
     int idLowerByte = m_idToEnroll & 0xFFU;
 
     int checksum = 14 + idHighByte + idLowerByte;
-    qDebug()<< " CHECSUM " << checksum;
     QString checksumHexa = QString("%1").arg(checksum, 4, 16, QChar('0')).toUpper();
 
     setCommand(storeCmd+idHexa+checksumHexa);
