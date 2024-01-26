@@ -1,63 +1,63 @@
 import QtQuick 2.9
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.0
-import QtQml.StateMachine 1.0 as DSM
-
 
 Window {
     visible: true
     width: 500
     height: 250
-    title: qsTr("Hello World")
+    title: qsTr("Fingerprint GROW RX305 test")
 
     property int counter: 1
 
-    Rectangle {
-        id: rect
-        width: 200
-        height: 40
-        border.color: "black"
-        border.width: 2
-        TextEdit {
-            id: txtEdit
-            anchors.fill: parent
-            padding: 5
-            focus: true
-        }
-    }
-    Button {
-        id: btnConnect
-        text: "Connect"
-        onClicked: fpMgr.loop()
-        anchors.top: rect.bottom
-        anchors.left: rect.left
-
-    }
-
-//    Connections {
-//        target: fpMgr
-//        onCommandSuccess: {
-//            info.text = "OK" + counter
-//            counter += 1
-//        }
-
-
-//    }
-
-    Button {
-        text: "Cancel"
-        onClicked: fpMgr.cancel()
-        anchors.top: rect.bottom
-        anchors.left: btnConnect.right
+    SpinBox {
+        id: id
+        from: 0
+        to: 1000
+        stepSize: 1
+        focus: true
+        editable: true
+        anchors.top: parent.top
+        anchors.topMargin: 10
+        anchors.left: parent.left
         anchors.leftMargin: 10
     }
 
     Button {
         id: btnEnroll
         text: "Enroll"
-        anchors.top: btnConnect.bottom
+        anchors.top: id.bottom
         anchors.topMargin: 10
-        anchors.left: btnConnect.left
+        anchors.left: id.left
+        onClicked: {
+            fingerId.visible = false
+            fpMgr.enroll(id.value)
+        }
+
+    }
+
+    Button {
+        text: "Cancel"
+        anchors.top: btnEnroll.top
+        anchors.left: btnEnroll.right
+        anchors.leftMargin: 10
+        onClicked: {
+            fingerId.visible = false
+            fpMgr.cancel()
+        }
+
+    }
+
+    Button {
+        id: btnSearch
+        text: "Search"
+        anchors.top: btnEnroll.bottom
+        anchors.topMargin: 10
+        anchors.left: btnEnroll.left
+        onClicked: {
+            fingerId.visible = false
+            fpMgr.search()
+        }
     }
 
     Text {
@@ -67,39 +67,25 @@ Window {
         anchors.right: parent.right
     }
 
-//    DSM.StateMachine {
-//        id: stateMachine
-//        initialState: idle
-//        running: true
+    Text {
+        id: fingerId
+        anchors.centerIn: parent
+        visible: false
+    }
 
-//        DSM.State {
-//            id: idle
-//            DSM.SignalTransition {
-//                signal: btnEnroll.clicked
-//                targetState: enrollingState
-//            }
-//        }
-//        DSM.State {
-//            id: enrollingState
-//            initialState: enrolling_State1
-//            onEntered: {
-//                info.text = "Enrolling"
-//            }
-//            DSM.State {
-//                id: enrolling_State1
-//                onEntered: fpMgr.loop()
-//                DSM.SignalTransition {
-//                    signal: fpMgr.commandSuccess
-//                    targetState: enrolling_State2
-//                }
-//            }
-//            DSM.State {
-//                id: enrolling_State2
-//                onEntered: {
-//                    info.text = "Step 2"
-//                }
-//            }
-//        }
-//    }
+    Connections {
+        target: fpMgr
+        onCommandSuccess: {
+            info.text = "OK"
+        }
+        onCommandError: {
+            info.text = error
+        }
+        onFingerprintFound: {
+            fingerId.text = "Fingerprint id: " + id
+            fingerId.visible = true
+        }
+
+    }
 
 }

@@ -2,29 +2,9 @@
 #include <QThread>
 #include <QAbstractEventDispatcher>
 
-FP_SerialComunication::FP_SerialComunication(QObject *parent) : QObject(parent)
+FP_SerialComunication::FP_SerialComunication(QObject *parent) : QThread(parent), waitTimeout(1000), quit(false)
 {
-    m_serialport.setBaudRate(QSerialPort::Baud57600);
-    m_serialport.setDataBits(QSerialPort::Data8);
-    m_serialport.setParity(QSerialPort::NoParity);
-    m_serialport.setStopBits(QSerialPort::OneStop);
-    m_serialport.setFlowControl(QSerialPort::NoFlowControl);
     m_portName = "/dev/ttyUSB0";
-
-
-}
-
-bool FP_SerialComunication::open()
-{
-    m_serialport.setPortName(m_portName);
-    if (m_serialport.open(QIODevice::ReadWrite)){
-        qDebug() << "Serial port opened successfully.";
-        return true;
-
-    } else {
-        qDebug() << "Failed to open serial port:" << m_serialport.errorString();
-        return false;
-    }
 }
 
 void FP_SerialComunication::loop(bool *cancelFlag)
@@ -51,57 +31,14 @@ void FP_SerialComunication::commandToSend(QString command)
 
 void FP_SerialComunication::sendCommand()
 {
-    qDebug() << this << Q_FUNC_INFO << QThread::currentThread();
     qDebug() << "Command: " << m_commandToSend;
-
-    QSerialPort m_serial;
-    m_serial.setPortName(m_portName);
-    m_serial.setBaudRate(QSerialPort::Baud57600);
-    m_serial.setDataBits(QSerialPort::Data8);
-    m_serial.setParity(QSerialPort::NoParity);
-    m_serial.setStopBits(QSerialPort::OneStop);
-    m_serial.setFlowControl(QSerialPort::NoFlowControl);
-
-    if (!m_serial.isOpen()){
-
-        if (m_serial.open(QIODevice::ReadWrite))
-            qDebug() << "open port success";
-        else {
-            qDebug() << "error al abir com";
-            return;
-        }
-    }
-
-    QByteArray requestData;
-    requestData.append(QByteArray::fromHex(m_commandToSend.toUtf8()));
-
-    m_serial.write(requestData);
-    if (m_serial.waitForBytesWritten(1000)) {
-        // read response
-        if (m_serial.waitForReadyRead(1000)) {
-            m_response = m_serial.readAll();
-            while (m_serial.waitForReadyRead(10)){
-                m_response += m_serial.readAll();
-            }
-//            qDebug() << "Response: " << m_response.toHex() << this << Q_FUNC_INFO << QThread::currentThread();
-            emit this->response(m_response.toHex());
-         } else {
-//            emit timeout(tr("Wait read response timeout %1").arg(QTime::currentTime().toString()));
-            qDebug() << "Timeout";
-        }
-    } else {
-//        emit timeout(tr("Wait write request timeout %1").arg(QTime::currentTime().toString()));
-        qDebug() << "Timeout";
-
-    }
-    m_serial.close();
-    QThread::msleep(500);
-
-
+    QMutexLocker locker(&mutex);
+    qDebug() << this << Q_FUNC_INFO << QThread::currentThread();
+    if (!isRunning())
+        start();
+    else
+        cond.wakeOne();
 }
-
-
-
 
 QByteArray FP_SerialComunication::getResponse()
 {
@@ -111,5 +48,61 @@ QByteArray FP_SerialComunication::getResponse()
 QString FP_SerialComunication::getCommandToSend() const
 {
     return m_commandToSend;
+}
+
+void FP_SerialComunication::run()
+{
+    mutex.lock();
+    int currentWaitTimeout = waitTimeout;
+    QString currentRequest = m_commandToSend;
+    mutex.unlock();
+
+    QSerialPort serial;
+
+    serial.setPortName(m_portName);
+    serial.setBaudRate(QSerialPort::Baud57600);
+    serial.setDataBits(QSerialPort::Data8);
+    serial.setParity(QSerialPort::NoParity);
+    serial.setStopBits(QSerialPort::OneStop);
+    serial.setFlowControl(QSerialPort::NoFlowControl);
+
+    if (!serial.open(QIODevice::ReadWrite)) {
+//        emit error(tr("Can't open %1, error code %2").arg(m_portName).arg(serial.error()));
+        qDebug() << tr("Can't open %1, error code %2").arg(m_portName).arg(serial.error());
+        return;
+    }
+    QThread::currentThread()->setObjectName("Secondary thread");
+
+    while (!quit) {
+        // write request
+        QByteArray requestData;
+        requestData.append(QByteArray::fromHex(currentRequest.toUtf8()));
+        serial.write(requestData);
+        if (serial.waitForBytesWritten(waitTimeout)) {
+            // read response
+            if (serial.waitForReadyRead(currentWaitTimeout)) {
+                m_response = serial.readAll();
+                while (serial.waitForReadyRead(10)){
+                    m_response += serial.readAll();
+                }
+                QString response(m_response);
+                qDebug() << "Response: " << m_response.toHex() << this << Q_FUNC_INFO << QThread::currentThread();
+                emit this->response(m_response.toHex());
+            } else {
+                qDebug() << "Timeout read response";
+                emit timeout();
+            }
+        } else {
+            qDebug() << "Timeout write request";
+            emit timeout();
+        }
+        mutex.lock();
+        cond.wait(&mutex);
+        currentRequest = m_commandToSend;
+        mutex.unlock();
+//        QThread::msleep(100);
+
+    }
+
 }
 

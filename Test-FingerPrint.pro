@@ -17,7 +17,6 @@ SOURCES += \
         FP_GrowRX305.cpp \
         FP_GrowRX305_StateMachine.cpp \
         FP_SerialComunication.cpp \
-        FP_Worker.cpp \
         FingerPrintMgr.cpp \
         main.cpp
 
@@ -38,6 +37,5 @@ HEADERS += \
     FP_GrowRX305.h \
     FP_GrowRX305_StateMachine.h \
     FP_SerialComunication.h \
-    FP_Worker.h \
     FingerPrintCommunicationProtocol.h \
     FingerPrintMgr.h

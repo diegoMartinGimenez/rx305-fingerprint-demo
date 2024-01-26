@@ -2,7 +2,6 @@
 #define FINGERPRINTMGR_H
 
 #include <QObject>
-#include <QScopedPointer>
 
 #include "FingerPrintCommunicationProtocol.h"
 //#include "FingerprintDevice.h"
@@ -15,19 +14,20 @@ public:
     void inicialize();
 
     bool openFingerPrintPort();
-    Q_INVOKABLE void loop();
+    Q_INVOKABLE void enroll(int id);
     Q_INVOKABLE void cancel();
+    Q_INVOKABLE void search();
 
 private:
     explicit FingerPrintMgr(QObject *parent = nullptr);
 
     static FingerPrintMgr* m_instance;
-//    QScopedPointer <FingerPrintCommunicationProtocol> m_fingerprint;
     FingerPrintCommunicationProtocol* m_fingerprint;
 
 signals:
     void commandSuccess();
     void commandError(QString error);
+    void fingerprintFound(int id);
 
 };
 

@@ -9,7 +9,6 @@
 #include <QMap>
 
 #include "FingerPrintCommunicationProtocol.h"
-#include "FP_Worker.h"
 #include "FP_SerialComunication.h"
 #include "FP_GrowRX305_StateMachine.h"
 
@@ -78,6 +77,7 @@ public:
     void cancel() override;
     bool open() override;
     bool enroll(int id) override;
+    void search() override;
 
     void processResponse();
 
@@ -114,20 +114,20 @@ public:
     QString cCodeToString(cCodes code);
 
 public slots:
-    void sendCommandToWorker();
+    void sendCommand();
+    void sendFingerFound();
 
 private:
-    FP_Worker *m_worker;
-    FP_SerialComunication *m_port;
+    FP_SerialComunication m_port;
     FP_GrowRX305_StateMachine *m_stateMachine;
-    QThread *m_thread;
-
-
 
 signals:
     void commandSuccess();
     void commandError(QString error);
-    void enrolling();
+    void enrolling(int id);
+    void searching();
+    void canceling();
+    void found(int id);
 
 
 };

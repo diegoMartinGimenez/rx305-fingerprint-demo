@@ -2,63 +2,52 @@
 
 FP_GrowRX305::FP_GrowRX305()
 {
-    m_port = new FP_SerialComunication(this);
     m_stateMachine = new FP_GrowRX305_StateMachine(this);
 
-//    QObject::connect(m_thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
-//    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
-//    QObject::connect(m_worker, &FP_Worker::done, m_thread, &QThread::quit);
-//    QObject::connect(m_thread, &QThread::finished, m_thread, &QThread::deleteLater);
+    QObject::connect(&m_port, &FP_SerialComunication::response, this, &FP_GrowRX305::processResponse);
+    QObject::connect(&m_port, &FP_SerialComunication::timeout, this->m_stateMachine, &FP_GrowRX305_StateMachine::error);
 
-//    m_thread->start();
-
-    QObject::connect(this->m_port, &FP_SerialComunication::response, this, &FP_GrowRX305::processResponse);
     QObject::connect(this, &FP_GrowRX305::commandSuccess, this, &FingerPrintCommunicationProtocol::commandSuccess);
-    QObject::connect(this, &FP_GrowRX305::enrolling, this->m_stateMachine, &FP_GrowRX305_StateMachine::signalOne);
+    QObject::connect(this, &FP_GrowRX305::commandError, this, &FingerPrintCommunicationProtocol::commandError);
+    QObject::connect(this, &FP_GrowRX305::found, this, &FingerPrintCommunicationProtocol::fingerprintFound);
+
+    QObject::connect(this, &FP_GrowRX305::enrolling, this->m_stateMachine, &FP_GrowRX305_StateMachine::enroll);
     QObject::connect(this, &FP_GrowRX305::commandSuccess, this->m_stateMachine, &FP_GrowRX305_StateMachine::success);
     QObject::connect(this, &FP_GrowRX305::commandError, this->m_stateMachine, &FP_GrowRX305_StateMachine::error);
-    QObject::connect(this->m_stateMachine, &FP_GrowRX305_StateMachine::sendCommand, this, &FP_GrowRX305::sendCommandToWorker);
+    QObject::connect(this, &FP_GrowRX305::searching, this->m_stateMachine, &FP_GrowRX305_StateMachine::search);
+    QObject::connect(this, &FP_GrowRX305::canceling, this->m_stateMachine, &FP_GrowRX305_StateMachine::cancel);
+
+    QObject::connect(this->m_stateMachine, &FP_GrowRX305_StateMachine::sendCommand, this, &FP_GrowRX305::sendCommand);
+    QObject::connect(this->m_stateMachine, &FP_GrowRX305_StateMachine::fingerprintFound, this, &FP_GrowRX305::sendFingerFound);
+
 }
 
 void FP_GrowRX305::cancel()
 {
-    m_worker->cancel();
+    emit canceling();
 }
 
 bool FP_GrowRX305::open()
 {
-    return m_port->open();
+    return true;
 }
 
 bool FP_GrowRX305::enroll(int id)
 {
-    emit enrolling();
-    Q_UNUSED(id)
+    emit enrolling(id);
     QThread::currentThread()->setObjectName("Main Thread");
-
-
-
-//    m_port->commandToSend(m_stateMachine->command());
-
-
-//    auto *thread = new QThread();
-//    thread->setObjectName("Secondary Thread");
-//    m_worker = new FP_Worker();
-//    m_worker->moveToThread(thread);
-
-//    QObject::connect(thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
-//    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
-//    QObject::connect(m_worker, &FP_Worker::done, thread, &QThread::quit);
-//    QObject::connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-
-//    thread->start();
 
     return true;
 }
 
+void FP_GrowRX305::search()
+{
+    emit searching();
+}
+
 void FP_GrowRX305::processResponse()
 {
-    QByteArray response = m_port->getResponse();
+    QByteArray response = m_port.getResponse();
     quint8 confirmationCode = static_cast<quint8>(response[9]);
     cCodes cCode = static_cast<cCodes>(confirmationCode);
     if (cCode == cCodes::FP_RESP_OK){
@@ -105,24 +94,25 @@ QString FP_GrowRX305::cCodeToString(FP_GrowRX305::cCodes code)
 
 }
 
-void FP_GrowRX305::sendCommandToWorker()
+void FP_GrowRX305::sendCommand()
 {
     qDebug() << this << Q_FUNC_INFO << QThread::currentThread();
 
-    m_port->commandToSend(m_stateMachine->command());
+    m_port.commandToSend(m_stateMachine->command());
+    m_port.sendCommand();
 
-    m_thread = new QThread();
-    m_thread->setObjectName("Secondary Thread");
-    m_worker = new FP_Worker();
-    m_worker->moveToThread(m_thread);
+}
 
-    QObject::connect(m_thread, &QThread::started, m_worker, [=]()->void{m_worker->doWork(m_port);});
-    QObject::connect(m_worker, &FP_Worker::done, m_worker, &FP_Worker::deleteLater);
-    QObject::connect(m_worker, &FP_Worker::done, m_thread, &QThread::quit);
-    QObject::connect(m_thread, &QThread::finished, m_thread, &QThread::deleteLater);
+void FP_GrowRX305::sendFingerFound()
+{
+    QByteArray response = m_port.getResponse();
+    quint8 id[2];
+    id[0] = static_cast<quint8>(response[10]);
+    id[1] = static_cast<quint8>(response[11]);
+    unsigned short decimalNumber = (id[0] << 8) | id[1];
 
-    m_thread->start();
-
+    qDebug() << "Valor decimal:" << decimalNumber;
+    emit found(decimalNumber);
 }
 
 
