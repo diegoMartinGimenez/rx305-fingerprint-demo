@@ -17,6 +17,7 @@ public:
     Q_INVOKABLE void enroll(int id);
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void search();
+    Q_INVOKABLE void deleteFingerprint(int id);
 
 private:
     explicit FingerPrintMgr(QObject *parent = nullptr);

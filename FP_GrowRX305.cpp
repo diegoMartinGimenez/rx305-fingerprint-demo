@@ -16,6 +16,7 @@ FP_GrowRX305::FP_GrowRX305()
     QObject::connect(this, &FP_GrowRX305::commandError, this->m_stateMachine, &FP_GrowRX305_StateMachine::error);
     QObject::connect(this, &FP_GrowRX305::searching, this->m_stateMachine, &FP_GrowRX305_StateMachine::search);
     QObject::connect(this, &FP_GrowRX305::canceling, this->m_stateMachine, &FP_GrowRX305_StateMachine::cancel);
+    QObject::connect(this, &FP_GrowRX305::deleteFp, this->m_stateMachine, &FP_GrowRX305_StateMachine::eraseFingerprint);
 
     QObject::connect(this->m_stateMachine, &FP_GrowRX305_StateMachine::sendCommand, this, &FP_GrowRX305::sendCommand);
     QObject::connect(this->m_stateMachine, &FP_GrowRX305_StateMachine::fingerprintFound, this, &FP_GrowRX305::sendFingerFound);
@@ -43,6 +44,11 @@ bool FP_GrowRX305::enroll(int id)
 void FP_GrowRX305::search()
 {
     emit searching();
+}
+
+void FP_GrowRX305::deleteFingerprint(int id)
+{
+    emit deleteFp(id);
 }
 
 void FP_GrowRX305::processResponse()

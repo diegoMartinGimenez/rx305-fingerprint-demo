@@ -19,11 +19,13 @@ FP_GrowRX305_StateMachine::FP_GrowRX305_StateMachine(QObject *parent) : QObject(
     QState *searchGenChar = new QState(search);
     QState *searchFp = new QState(search);
     QState *fpFound = new QState(search);
-
+    QState *erase = new QState(m_sm);
+    QState *erasing = new QState(erase);
 
     m_sm->setInitialState(idle);
 
-    QObject::connect(this, &FP_GrowRX305_StateMachine::enroll, this, &FP_GrowRX305_StateMachine::setIdToEnroll);
+    QObject::connect(this, &FP_GrowRX305_StateMachine::enroll, this, &FP_GrowRX305_StateMachine::setFingerprintId);
+    QObject::connect(this, &FP_GrowRX305_StateMachine::eraseFingerprint, this, &FP_GrowRX305_StateMachine::setFingerprintId);
 
     idle->addTransition(this, &FP_GrowRX305_StateMachine::enroll, enroll);
     enroll->setInitialState(gettingImage1);
@@ -74,6 +76,13 @@ FP_GrowRX305_StateMachine::FP_GrowRX305_StateMachine(QObject *parent) : QObject(
     QObject::connect(searchFp, &QState::entered, this, &FP_GrowRX305_StateMachine::searchCmd);
     QObject::connect(fpFound, &QState::entered, this, &FP_GrowRX305_StateMachine::fpFound);
 
+    idle->addTransition(this, &FP_GrowRX305_StateMachine::eraseFingerprint, erase);
+    erase->setInitialState(erasing);
+
+    erasing->addTransition(this, &FP_GrowRX305_StateMachine::success, idle);
+
+    QObject::connect(erasing, &QState::entered, this, &FP_GrowRX305_StateMachine::eraseCmd);
+
     m_sm->start();
 
 }
@@ -88,20 +97,21 @@ void FP_GrowRX305_StateMachine::setCommand(const QString &command)
     m_command = command;
 }
 
-int FP_GrowRX305_StateMachine::getIdToEnroll() const
+int FP_GrowRX305_StateMachine::getFingerprintId() const
 {
-    return m_idToEnroll;
+    return m_fingerprintId;
 }
 
-void FP_GrowRX305_StateMachine::setIdToEnroll(int idToEnroll)
+void FP_GrowRX305_StateMachine::setFingerprintId(int id)
 {
-    m_idToEnroll = idToEnroll;
+    m_fingerprintId = id;
 }
 
 void FP_GrowRX305_StateMachine::fpFound()
 {
     emit fingerprintFound();
 }
+
 
 void FP_GrowRX305_StateMachine::getImgCmd()
 {
@@ -129,11 +139,11 @@ void FP_GrowRX305_StateMachine::regModelCmd()
 
 void FP_GrowRX305_StateMachine::storeCmd()
 {
-    QString idHexa = QString("%1").arg(m_idToEnroll, 4, 16, QChar('0')).toUpper();
+    QString idHexa = QString("%1").arg(m_fingerprintId, 4, 16, QChar('0')).toUpper();
     QString storeCmd = "EF01ffffffff0100060601";
 
-    int idHighByte = (m_idToEnroll >> 8) & 0xFFU;
-    int idLowerByte = m_idToEnroll & 0xFFU;
+    int idHighByte = (m_fingerprintId >> 8) & 0xFFU;
+    int idLowerByte = m_fingerprintId & 0xFFU;
 
     int checksum = 14 + idHighByte + idLowerByte;
     QString checksumHexa = QString("%1").arg(checksum, 4, 16, QChar('0')).toUpper();
@@ -145,5 +155,21 @@ void FP_GrowRX305_StateMachine::storeCmd()
 void FP_GrowRX305_StateMachine::searchCmd()
 {
     setCommand("EF01ffffffff0100080401000003E900FA");
+    emit sendCommand();
+}
+
+void FP_GrowRX305_StateMachine::eraseCmd()
+{
+    QString idHexa = QString("%1").arg(m_fingerprintId, 4, 16, QChar('0')).toUpper();
+    QString storeCmd = "EF01ffffffff0100070C";
+    QString qtyToBeDeleted = "0001";
+
+    int idHighByte = (m_fingerprintId >> 8) & 0xFFU;
+    int idLowerByte = m_fingerprintId & 0xFFU;
+    int checksum = 21 + idHighByte + idLowerByte;
+
+    QString checksumHexa = QString("%1").arg(checksum, 4, 16, QChar('0')).toUpper();
+
+    setCommand(storeCmd+idHexa+qtyToBeDeleted+checksumHexa);
     emit sendCommand();
 }

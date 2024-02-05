@@ -48,3 +48,8 @@ void FingerPrintMgr::search()
 {
     m_fingerprint->search();
 }
+
+void FingerPrintMgr::deleteFingerprint(int id)
+{
+    m_fingerprint->deleteFingerprint(id);
+}

@@ -63,7 +63,7 @@ void FP_SerialComunication::run()
     serial.setBaudRate(QSerialPort::Baud57600);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
-    serial.setStopBits(QSerialPort::OneStop);
+    serial.setStopBits(QSerialPort::TwoStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
 
     if (!serial.open(QIODevice::ReadWrite)) {
@@ -77,12 +77,12 @@ void FP_SerialComunication::run()
         // write request
         QByteArray requestData;
         requestData.append(QByteArray::fromHex(currentRequest.toUtf8()));
-        serial.write(requestData);
-        if (serial.waitForBytesWritten(waitTimeout)) {
+        serial.write(requestData);        
+        if (serial.waitForBytesWritten(currentWaitTimeout)) {
             // read response
             if (serial.waitForReadyRead(currentWaitTimeout)) {
                 m_response = serial.readAll();
-                while (serial.waitForReadyRead(10)){
+                 while (serial.waitForReadyRead(10)){
                     m_response += serial.readAll();
                 }
                 QString response(m_response);

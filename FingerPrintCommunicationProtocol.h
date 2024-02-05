@@ -10,6 +10,7 @@ public:
     virtual void cancel() = 0;
     virtual bool enroll(int id) = 0;
     virtual void search() = 0;
+    virtual void deleteFingerprint(int id) = 0;
 
 signals:
     void commandSuccess();

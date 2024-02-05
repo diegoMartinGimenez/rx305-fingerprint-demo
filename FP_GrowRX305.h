@@ -78,6 +78,7 @@ public:
     bool open() override;
     bool enroll(int id) override;
     void search() override;
+    void deleteFingerprint(int id) override;
 
     void processResponse();
 
@@ -128,6 +129,7 @@ signals:
     void searching();
     void canceling();
     void found(int id);
+    void deleteFp(int id);
 
 
 };

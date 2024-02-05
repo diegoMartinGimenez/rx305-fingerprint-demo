@@ -13,12 +13,12 @@ public:
     QString command() const;
     void setCommand(const QString &command);
 
-    int getIdToEnroll() const;
+    int getFingerprintId() const;
 
 private:
     QStateMachine *m_sm;
     QString m_command;
-    int m_idToEnroll;
+    int m_fingerprintId;
 
 signals:
     void enroll(int id);
@@ -28,6 +28,8 @@ signals:
     void search();
     void cancel();
     void fingerprintFound();
+    void eraseFingerprint(int id);
+
 
 public slots:
     void getImgCmd();
@@ -36,10 +38,9 @@ public slots:
     void regModelCmd();
     void storeCmd();
     void searchCmd();
-    void setIdToEnroll(int idToEnroll);
+    void setFingerprintId(int id);
     void fpFound();
-
-
+    void eraseCmd();
 
 };
 

@@ -10,10 +10,6 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
 
-//    FingerPrintMgr* fp = FINGER_PRINT_MGR;
-
-//    fp->openFingerPrintPort();
-
     QQmlApplicationEngine engine;  
     QQmlContext* ctx = engine.rootContext();
 
